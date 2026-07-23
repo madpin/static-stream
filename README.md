@@ -127,7 +127,7 @@ Playing begins directly from the audio callback acknowledgement. Stop also cance
 still decoding, so a late decoder result cannot restart playback.
 While a clip is playing, its button background fills from left to right and the button shows the
 completed percentage. The progress clock starts from the audio engine's playback acknowledgement,
-not from the initial click or decode request.
+not from the initial click or decode request. Activate the current clip again to stop it immediately.
 
 **Clip volume to microphone** controls how strongly a clip is mixed into Static Microphone.
 Enable **Play clips through speakers** to hear the same clip locally, then use **Clip volume to

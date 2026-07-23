@@ -12,6 +12,8 @@
   notarization, stapling, DMG and updater ZIP packaging, and GitHub Release publication.
 - Recreate a visible development pre-release with universal DMG, ZIP, and checksums for every
   successful commit to `main`.
+- Make the active clip button, menu item, and number shortcut stop loading or playback when
+  activated again.
 - Derive all host, camera-extension, and audio-driver versions from `Cargo.toml`.
 - Document release secrets, publishing, updater behavior, architecture, and recovery.
 

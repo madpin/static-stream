@@ -1431,7 +1431,10 @@
         if (isCurrent && clipPhase === "playing") {
           const percent = Math.min(100, Math.round(progress * 100));
           button.querySelector(".clip-status").textContent = `${percent}%`;
-          button.setAttribute("aria-label", `${button.dataset.clipName}, playing, ${percent}%`);
+          button.setAttribute(
+            "aria-label",
+            `${button.dataset.clipName}, playing, ${percent}%, activate to stop`
+          );
         }
       }
     };
@@ -1567,6 +1570,7 @@
           state.clips.forEach((clip, index) => {
             const isCurrent = state.clipName === clip.name;
             const phase = isCurrent ? clipPhase : "idle";
+            const isActive = isCurrent && ["loading", "starting", "playing"].includes(phase);
             const statusLabels = {
               loading: "Loading",
               starting: "Starting",
@@ -1580,10 +1584,14 @@
             button.className = `clip ${phase}`;
             button.dataset.clipName = clip.name;
             button.disabled = !state.audioReady || state.busy;
-            button.title = clip.name;
+            button.title = isActive ? `Stop ${clip.name}` : clip.name;
             button.setAttribute(
               "aria-label",
-              statusLabels[phase] ? `${clip.name}, ${statusLabels[phase]}` : clip.name
+              isActive
+                ? `${clip.name}, ${statusLabels[phase]}, activate to stop`
+                : statusLabels[phase]
+                  ? `${clip.name}, ${statusLabels[phase]}`
+                  : clip.name
             );
             button.innerHTML =
               `<span class="clip-number">${index < 9 ? `⌥⌘${index + 1}` : ""}</span>` +

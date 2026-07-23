@@ -105,6 +105,8 @@ playback, so decode and device-start time are not incorrectly counted as played 
 clip remains fully filled and shows **Finished** until the next clip action.
 
 Choose **Stop clip** to stop playback, including a clip that is still decoding.
+Activating the current clip button or its number shortcut again also stops it. Activating a
+different clip switches playback to that clip, while activating a finished clip replays it.
 
 ## Device Maintenance
 

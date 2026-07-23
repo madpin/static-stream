@@ -956,7 +956,7 @@ impl Controller {
                     .and_then(|index| self.clips.get(index))
                     .cloned()
                 {
-                    self.dispatch(Action::PlayClip(path));
+                    self.activate_clip(path);
                 }
             }
             _ if id.starts_with(MENU_VOICE_EFFECT_PREFIX) => {
@@ -994,7 +994,7 @@ impl Controller {
             ShortcutAction::StopClips => self.dispatch(Action::StopClips),
             ShortcutAction::PlayClip(index) => {
                 if let Some(path) = self.clips.get(index).cloned() {
-                    self.dispatch(Action::PlayClip(path));
+                    self.activate_clip(path);
                 }
             }
         }
@@ -1036,7 +1036,7 @@ impl Controller {
             }
             GuiCommand::PlayClip { index } => {
                 if let Some(path) = self.clips.get(index).cloned() {
-                    self.dispatch(Action::PlayClip(path));
+                    self.activate_clip(path);
                 }
             }
             GuiCommand::StopClip => self.dispatch(Action::StopClips),
@@ -1252,6 +1252,12 @@ impl Controller {
         if self.state.camera_frozen != frozen {
             self.dispatch(Action::ToggleCameraFreeze);
         }
+    }
+
+    fn activate_clip(&mut self, path: PathBuf) {
+        let action =
+            clip_activation_action(self.state.active_clip.as_deref(), self.clip_phase, path);
+        self.dispatch(action);
     }
 
     const fn reset_clip_timing(&mut self) {
@@ -2804,6 +2810,23 @@ fn shortcut_label(action: ShortcutAction) -> String {
     }
 }
 
+fn clip_activation_action(
+    active_clip: Option<&Path>,
+    phase: ClipPhase,
+    selected_clip: PathBuf,
+) -> Action {
+    if active_clip == Some(selected_clip.as_path())
+        && matches!(
+            phase,
+            ClipPhase::Loading | ClipPhase::Starting | ClipPhase::Playing
+        )
+    {
+        Action::StopClips
+    } else {
+        Action::PlayClip(selected_clip)
+    }
+}
+
 fn gui_command_message(command: &GuiCommand) -> String {
     match command {
         GuiCommand::Ready => "Control window connected.".into(),
@@ -3132,5 +3155,37 @@ mod tests {
         assert_eq!(telemetry_interval(true, true), Duration::from_millis(100));
         assert_eq!(telemetry_interval(false, true), Duration::from_millis(500));
         assert_eq!(telemetry_interval(true, false), Duration::from_millis(500));
+    }
+
+    #[test]
+    fn activating_the_active_clip_toggles_loading_starting_and_playback_off() {
+        let selected = PathBuf::from("clip.mp3");
+        for phase in [ClipPhase::Loading, ClipPhase::Starting, ClipPhase::Playing] {
+            assert_eq!(
+                clip_activation_action(Some(&selected), phase, selected.clone()),
+                Action::StopClips
+            );
+        }
+    }
+
+    #[test]
+    fn activating_an_inactive_or_finished_clip_starts_playback() {
+        let selected = PathBuf::from("clip.mp3");
+        assert_eq!(
+            clip_activation_action(None, ClipPhase::Idle, selected.clone()),
+            Action::PlayClip(selected.clone())
+        );
+        assert_eq!(
+            clip_activation_action(
+                Some(Path::new("other.mp3")),
+                ClipPhase::Playing,
+                selected.clone()
+            ),
+            Action::PlayClip(selected.clone())
+        );
+        assert_eq!(
+            clip_activation_action(Some(&selected), ClipPhase::Finished, selected.clone()),
+            Action::PlayClip(selected)
+        );
     }
 }
