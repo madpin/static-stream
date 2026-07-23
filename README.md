@@ -35,6 +35,7 @@ live levels for clip audio, physical input, processed voice, and the final Stati
 | Audio levels and optional speaker monitoring | Implemented and tested |
 | Core Media I/O virtual camera | Implemented; activation requires Apple team signing |
 | Apple Silicon and Intel bundle | Implemented |
+| Downloadable CI development builds | Implemented for every `main` push |
 | Signed GitHub releases and in-app updates | Implemented; publishing requires Apple release secrets |
 | Windows and Linux shells | Not implemented |
 
@@ -47,6 +48,12 @@ meeting apps only discover microphones published by Core Audio.
 For a normal installation, download the universal DMG from
 [GitHub Releases](https://github.com/madpin/static-stream/releases), open it, and drag
 **Static Stream** to Applications.
+
+Until the first notarized release is published, each successful
+[GitHub Actions CI run](https://github.com/madpin/static-stream/actions/workflows/ci.yml) contains a
+30-day **Static-Stream-macOS-universal-development** artifact with a universal DMG, ZIP, and
+SHA-256 checksums. That ad-hoc build is for development: macOS may require **Open Anyway**, Static
+Camera cannot activate, and in-app installation remains disabled.
 
 For a development build:
 

@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+env:
+  CARGO_TERM_COLOR: always
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: read
 
@@ -19,3 +23,43 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: ./scripts/check.sh
       - run: ./scripts/build-macos.sh
+      - name: Package development build
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(sed -nE 's/^version = "([^"]+)"$/\1/p' Cargo.toml | head -1)"
+          APP="dist/Static Stream.app"
+          ZIP="dist/Static-Stream-${VERSION}-macos-universal-development.zip"
+          DMG="dist/Static-Stream-${VERSION}-macos-universal-development.dmg"
+          STAGING="$RUNNER_TEMP/static-stream-development-dmg"
+
+          rm -rf "$STAGING"
+          mkdir -p "$STAGING"
+          ditto "$APP" "$STAGING/Static Stream.app"
+          ln -s /Applications "$STAGING/Applications"
+          hdiutil create \
+            -volname "Static Stream Development" \
+            -srcfolder "$STAGING" \
+            -ov \
+            -format UDZO \
+            "$DMG"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+          (
+            cd dist
+            shasum -a 256 \
+              "$(basename "$DMG")" \
+              "$(basename "$ZIP")" \
+              > SHA256SUMS-development.txt
+          )
+      - name: Upload development build
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Static-Stream-macOS-universal-development
+          path: |
+            dist/Static-Stream-*-macos-universal-development.dmg
+            dist/Static-Stream-*-macos-universal-development.zip
+            dist/SHA256SUMS-development.txt
+          if-no-files-found: error
+          retention-days: 30
