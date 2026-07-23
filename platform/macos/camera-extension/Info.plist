@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>StaticStreamCameraExtension</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.madpin.staticstream.camera</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>Static Camera</string>
+    <key>CFBundlePackageType</key>
+    <string>SYSX</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.9</string>
+    <key>CFBundleVersion</key>
+    <string>1009</string>
+    <key>CMIOExtension</key>
+    <dict>
+        <key>CMIOExtensionMachServiceName</key>
+        <string>__TEAM_PREFIX__com.madpin.staticstream.camera</string>
+    </dict>
+    <key>LSMinimumSystemVersion</key>
+    <string>12.3</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Static Stream uses the selected camera to provide live and frozen video.</string>
+    <key>NSSystemExtensionUsageDescription</key>
+    <string>Static Stream installs a virtual camera for video meeting applications.</string>
+</dict>
+</plist>

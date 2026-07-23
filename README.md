@@ -5,8 +5,23 @@ microphone for Zoom, Teams, Discord, browsers, and other meeting software.
 
 The app has a normal control window and a menu-bar item near the clock. It can hold the last camera
 frame, pass through or mute a physical microphone, and mix or replace the microphone with sound
-clips. The control window includes separate live levels for clip audio, the physical microphone,
-and the final Static Microphone signal.
+clips. Native voice effects can make the microphone sound deep, robotic, anonymous, radio-like,
+alien, tiny, or demonic without a model or network service. The control window includes separate
+live levels for clip audio, physical input, processed voice, and the final Static Microphone signal.
+
+![Static Stream controls while a sound clip is playing](docs/images/controls.png)
+
+## Documentation
+
+- [Usage guide](docs/usage.md): installation, keyboard operation, clips, monitoring, and
+  troubleshooting
+- [Voice effects](docs/voice-effects.md): presets, controls, latency, and troubleshooting
+- [Camera signing guide](docs/camera-signing.md): unsigned development test, Apple signing, and
+  camera activation
+- [Releases and updates](docs/releases.md): GitHub signing secrets, notarized releases, and the
+  in-app updater
+- [Architecture](docs/architecture.md): processes, data paths, real-time boundaries, and
+  portability
 
 ## Current Status
 
@@ -16,9 +31,11 @@ and the final Static Microphone signal.
 | Global keyboard shortcuts | Implemented |
 | Bundled virtual microphone | Implemented and tested |
 | Microphone pass-through, mute, and clips | Implemented and tested |
+| Native real-time voice effects | Implemented and tested |
 | Audio levels and optional speaker monitoring | Implemented and tested |
 | Core Media I/O virtual camera | Implemented; activation requires Apple team signing |
 | Apple Silicon and Intel bundle | Implemented |
+| Signed GitHub releases and in-app updates | Implemented; publishing requires Apple release secrets |
 | Windows and Linux shells | Not implemented |
 
 BlackHole is not required. Static Stream ships its own Core Audio driver named
@@ -27,17 +44,22 @@ meeting apps only discover microphones published by Core Audio.
 
 ## Use Static Stream
 
-1. Build the app:
+For a normal installation, download the universal DMG from
+[GitHub Releases](https://github.com/madpin/static-stream/releases), open it, and drag
+**Static Stream** to Applications.
 
-   ```sh
-   ./scripts/build-macos.sh
-   ```
+For a development build:
 
-2. Open [the built app](dist/Static%20Stream.app).
-3. In **Virtual device setup**, choose **Install / update** beside **Static Microphone** and approve
+```sh
+./scripts/build-macos.sh
+```
+
+Then open [the built app](dist/Static%20Stream.app).
+
+1. In **Virtual device setup**, choose **Install / update** beside **Static Microphone** and approve
    the macOS administrator prompt.
-4. Select **Static Microphone** as the microphone in the meeting app.
-5. Select the physical microphone in Static Stream.
+2. Select **Static Microphone** as the microphone in the meeting app.
+3. Select the physical microphone in Static Stream.
 
 The installer copies the bundled driver to `/Library/Audio/Plug-Ins/HAL/StaticStreamAudio.driver`
 and restarts Core Audio. No third-party audio product is downloaded or required.
@@ -46,6 +68,14 @@ The camera has an additional Apple security requirement. A distributable build m
 Apple development team, placed in `/Applications`, and approved under **System Settings > General >
 Login Items & Extensions > Camera Extensions**. Static Stream disables Freeze and explains the
 missing step until macOS reports **Static Camera** as an available device.
+
+An unsigned build can still run **Test camera** in the setup panel. That executable exercises the
+same live, Freeze, and resume selector compiled into the extension and reports the physical cameras
+visible to AVFoundation. It does not publish a virtual camera to other applications; macOS reserves
+that system integration for an approved, signed camera extension. See the
+[camera signing guide](docs/camera-signing.md) for both paths.
+
+![Unsigned camera development test](docs/images/camera-setup.png)
 
 ## Install, Update, and Remove Devices
 
@@ -70,6 +100,7 @@ restart. Static Stream never removes BlackHole or another third-party virtual de
 | --- | --- |
 | Freeze or unfreeze camera | `Option+Command+F` |
 | Mute or unmute microphone | `Option+Command+M` |
+| Select the next voice effect | `Option+Command+V` |
 | Stop the active sound clip | `Option+Command+X` |
 | Play clips 1 through 9 | `Option+Command+1` through `9` |
 | Quit from the menu | `Command+Q` |
@@ -82,14 +113,31 @@ Static Stream creates a Clips directory on first launch. Choose **Open Clips fol
 WAV, MP3, OGG, FLAC, AIFF, CAF, or M4A files, then choose **Refresh clips**. The first nine
 alphabetically sorted clips receive number shortcuts.
 
-The control window shows each clip as **Loading**, **Playing**, **Finished**, **Stopped**, or
-**Error**. Playback starts only after the audio engine acknowledges the decoded clip. Stop also
-cancels a clip that is still decoding, so a late decoder result cannot restart playback.
+The control window shows each clip as **Loading**, **Starting**, **Playing**, **Finished**,
+**Stopped**, or **Error**. Loading covers decoding, Starting covers the bounded audio queue, and
+Playing begins directly from the audio callback acknowledgement. Stop also cancels a clip that is
+still decoding, so a late decoder result cannot restart playback.
+While a clip is playing, its button background fills from left to right and the button shows the
+completed percentage. The progress clock starts from the audio engine's playback acknowledgement,
+not from the initial click or decode request.
 
 **Clip volume to microphone** controls how strongly a clip is mixed into Static Microphone.
 Enable **Play clips through speakers** to hear the same clip locally, then use **Clip volume to
 speakers** for an independent listening level. Speaker monitoring never sends the physical
 microphone back to the speakers.
+
+## Voice Effects
+
+Choose Clean, Deep, Robot, Anonymous, Radio, Alien, Tiny, or Demon in the control window or the
+menu-bar menu. **Intensity** controls the preset character and **Effect mix** blends it with the
+clean microphone. Changes are smoothed and presets crossfade without restarting audio routing.
+Sound clips remain unprocessed.
+
+![Static Stream voice-effect controls](docs/images/voice-effects.png)
+
+The effects are local Rust DSP and do not require a model download, network connection, or
+third-party plug-in. The **Anonymous** preset changes how a voice sounds but does not guarantee
+identity protection. See the [voice-effects guide](docs/voice-effects.md).
 
 ## Activity Debug Screen
 
@@ -101,6 +149,21 @@ The screen keeps the newest 250 events in memory, with elapsed time, severity, a
 show all, informational, warning, or error entries, and **Clear** empties the current log. Device and
 clip names can appear in messages, but audio samples are never recorded. Events are discarded when
 Static Stream quits and are not written to disk.
+
+![Static Stream activity log](docs/images/activity.png)
+
+## App Updates
+
+Static Stream checks the latest GitHub Release shortly after launch by default. The **App updates**
+section shows the current version, available version, release note summary, and update status.
+Choose **Check now** for an immediate check. A verified update is installed only after choosing
+**Install & restart**.
+
+Automatic installation is enabled only in an Apple-team-signed app bundle running from a writable
+installation directory. Development and ad-hoc builds can check for releases, but cannot replace
+themselves. Before installation, Static Stream validates the release URL and SHA-256 digest, the
+app bundle identifier and version, its Apple Team ID, its complete code signature, and Gatekeeper
+assessment. See [Releases and updates](docs/releases.md).
 
 ## Development
 
@@ -135,7 +198,7 @@ or Apple Distribution identity. Without one it produces an ad-hoc build that run
 engine but intentionally omits restricted entitlements, so it cannot activate a camera extension.
 
 For the camera, use an Apple Development or Developer ID Application identity whose App ID includes
-the System Extension and App Groups capabilities:
+the System Extension capability for the host and an App Group shared by the host and extension:
 
 ```sh
 SIGNING_IDENTITY="Apple Development: Your Name (TEAMID)" \
@@ -145,7 +208,9 @@ TEAM_IDENTIFIER_PREFIX="TEAMID" \
 
 Move that build to `/Applications` before requesting activation. The team prefix is compiled into
 both sides of the app-group channel; this is required for Freeze state to reach the camera
-extension.
+extension. Provisioning profiles can be supplied with `APP_PROVISIONING_PROFILE` and
+`CAMERA_PROVISIONING_PROFILE`; the [camera signing guide](docs/camera-signing.md) covers the complete
+setup.
 
 ## Testing
 
@@ -154,6 +219,13 @@ loopback test:
 
 ```sh
 ./scripts/check.sh
+```
+
+The quality suite also compiles and runs the unsigned camera test. You can run the bundled copy
+directly after building:
+
+```sh
+"dist/Static Stream.app/Contents/MacOS/static-stream-camera-test"
 ```
 
 After installing Static Microphone, verify real Core Audio output-to-input samples:
@@ -172,15 +244,16 @@ Physical camera -> AVFoundation -> Core Media I/O extension -> Static Camera -> 
                                      ^
 Control window / menu / hotkey -> app-group freeze state
 
-Physical mic -> CPAL -> resampler -> mixer -> Static Stream Audio driver output
-Sound clips -> Symphonia -------------------^
+Physical mic -> CPAL -> resampler -> voice effects -> mixer -> audio driver output
+Sound clips -> Symphonia --------------------------------------^
 Static Stream Audio driver input -------------------------------> meeting app
 ```
 
-- `src/audio`: device selection, bounded transport, streaming resampling, and clip mixing
+- `src/audio`: device selection, bounded transport, resampling, voice DSP, and clip mixing
 - `src/clips.rs`: clip discovery and Symphonia decoding
 - `src/state.rs`: platform-neutral action/effect state machine
 - `src/macos.rs`: window, menu bar, hotkeys, installers, and device status
+- `src/updates.rs`: release checks, signed-bundle verification, replacement, and rollback
 - `assets/app.html`: local WebKit control UI; it has no network dependency
 - `platform/macos/audio-driver`: universal AudioServerPlugIn loopback driver
 - `platform/macos/camera-extension`: Core Media I/O camera provider
@@ -188,6 +261,9 @@ Static Stream Audio driver input -------------------------------> meeting app
 Normal audio callbacks use bounded lock-free buffers and do not allocate. The audio driver stores
 two-channel float samples in a fixed lock-free ring. Device enumeration isolates failures so one
 malformed third-party endpoint cannot remove all controls.
+
+See [docs/architecture.md](docs/architecture.md) for the component contracts, process boundaries,
+and portability plan.
 
 ## Troubleshooting
 
