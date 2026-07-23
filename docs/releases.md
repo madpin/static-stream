@@ -13,16 +13,18 @@ enables hardened runtime, notarizes the app and DMG with Apple, and staples the 
 
 ## Development Artifacts
 
-Every successful push to `main` uploads a
-**Static-Stream-macOS-universal-development** artifact to its GitHub Actions CI run. It contains a
-universal DMG, updater-shaped ZIP, and `SHA256SUMS-development.txt`, and GitHub retains it for 30
-days. This provides a downloadable build before Apple distribution credentials are configured.
+Every successful commit to `main` creates a visible GitHub pre-release tagged
+`development-VERSION-SHORT_SHA` and uploads a
+**Static-Stream-macOS-universal-development** artifact to its GitHub Actions CI run. Both contain a
+universal DMG, updater-shaped ZIP, and `SHA256SUMS-development.txt`; GitHub retains the Actions
+artifact for 30 days while the pre-release remains in release history. This provides a downloadable
+build for every commit before Apple distribution credentials are configured.
 
 Development artifacts are ad-hoc signed. They can test the window, menu bar, keyboard controls,
 audio engine, bundled microphone installation, clips, voice effects, and unsigned camera test.
 They cannot activate Static Camera, pass Gatekeeper like a notarized release, or install themselves
-through the updater. They are never published as `latest.json`, so installed production builds will
-not mistake one for a release.
+through the updater. Development builds are marked as pre-releases and never publish `latest.json`,
+so installed production builds will not mistake one for a release.
 
 ## One-Time Apple Setup
 

@@ -10,6 +10,8 @@
 - Add detached app replacement with same-directory staging, rollback, cleanup, and restart.
 - Add a tag-driven GitHub Actions release pipeline for universal Developer ID signing,
   notarization, stapling, DMG and updater ZIP packaging, and GitHub Release publication.
+- Recreate a visible development pre-release with universal DMG, ZIP, and checksums for every
+  successful commit to `main`.
 - Derive all host, camera-extension, and audio-driver versions from `Cargo.toml`.
 - Document release secrets, publishing, updater behavior, architecture, and recovery.
 

@@ -6,16 +6,15 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   macos:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -24,11 +23,14 @@ jobs:
       - run: ./scripts/check.sh
       - run: ./scripts/build-macos.sh
       - name: Package development build
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: development
         shell: bash
         run: |
           set -euo pipefail
           VERSION="$(sed -nE 's/^version = "([^"]+)"$/\1/p' Cargo.toml | head -1)"
+          SHORT_SHA="$(git rev-parse --short=7 "$GITHUB_SHA")"
+          TAG="development-${VERSION}-${SHORT_SHA}"
           APP="dist/Static Stream.app"
           ZIP="dist/Static-Stream-${VERSION}-macos-universal-development.zip"
           DMG="dist/Static-Stream-${VERSION}-macos-universal-development.dmg"
@@ -52,9 +54,31 @@ jobs:
               "$(basename "$ZIP")" \
               > SHA256SUMS-development.txt
           )
+          cat > dist/development-release-notes.md <<EOF
+          Universal macOS development build for Apple Silicon and Intel from commit
+          [\`${SHORT_SHA}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}).
+
+          ### Included
+
+          - DMG installer
+          - ZIP app bundle
+          - SHA-256 checksums
+
+          ### Important limitations
+
+          This build is ad-hoc signed because Apple distribution credentials are not configured.
+          macOS may require **System Settings > Privacy & Security > Open Anyway**.
+
+          Static Microphone, clips, voice effects, the GUI, menu bar, and unsigned camera test are
+          available. Static Camera cannot activate, and in-app update installation is disabled.
+          This pre-release is excluded from the production automatic-update feed.
+          EOF
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
       - name: Upload development build
-        if: github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v7
         with:
           name: Static-Stream-macOS-universal-development
           path: |
@@ -63,3 +87,18 @@ jobs:
             dist/SHA256SUMS-development.txt
           if-no-files-found: error
           retention-days: 30
+      - name: Publish development pre-release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.development.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Static Stream ${{ steps.development.outputs.version }} (${{ steps.development.outputs.short_sha }})
+          body_path: dist/development-release-notes.md
+          prerelease: true
+          make_latest: false
+          fail_on_unmatched_files: true
+          files: |
+            dist/Static-Stream-*-macos-universal-development.dmg
+            dist/Static-Stream-*-macos-universal-development.zip
+            dist/SHA256SUMS-development.txt
