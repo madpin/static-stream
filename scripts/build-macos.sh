@@ -99,7 +99,7 @@ build_swift() {
 
 cd "$ROOT"
 for target in "${RUST_TARGETS[@]}"; do
-    if ! rustup target list --installed | rg -qx "$target"; then
+    if ! rustup target list --installed | grep -qx "$target"; then
         print -u2 "Missing Rust target: $target"
         print -u2 "Install it with: rustup target add $target"
         exit 1
